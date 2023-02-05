@@ -75,7 +75,7 @@ app.post("/api/users/:id/exercises", async (req, res) => {
             _id: user._id,
             username: user.username,
             date: date,
-            duration: duration,
+            duration: data.duration,
             description: description,
         });
     });
@@ -89,12 +89,12 @@ app.get("/api/users/:id/logs", async (req, res) => {
     let exercises = Exercise.find(
         { personId: req.params.id },
         "-_id description duration date"
-    );
-
-    if (limit) exercises = exercises.limit(parseInt(limit));
+    )
+        .sort({ date: -1 })
+        .limit(parseInt(limit));
 
     exercises = await exercises.exec();
-
+    console.log(exercises);
     if (from) {
         const fromDate = new Date(from);
         exercises = exercises.filter((element) => {
