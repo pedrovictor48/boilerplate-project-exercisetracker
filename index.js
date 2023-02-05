@@ -53,24 +53,35 @@ app.get("/api/users", (req, res) => {
     });
 });
 
-app.post("/api/users/:id/exercises", (req, res) => {
+app.post("/api/users/:id/exercises", async (req, res) => {
     let { description, duration, date } = req.body;
     let nowDate = new Date();
-    const nowDateStr = nowDate.toISOString().split("T")[0];
-    date = date || nowDateStr;
+    if (!date) {
+        date = nowDate.toDateString();
+    } else {
+        let formDate = new Date(date);
+        date = formDate.toDateString();
+    }
     const newExercise = Exercise({
         description: description,
-        duration: duration,
+        duration: parseInt(duration),
         date: date,
         personId: req.params.id,
     });
-    newExercise.save((err, data) => {
+    newExercise.save(async (err, data) => {
         if (err) return res.json(err);
-        return res.json(data);
+        const user = await User.findById(req.params.id);
+        return res.json({
+            _id: user._id,
+            username: user.username,
+            date: date,
+            duration: duration,
+            description: description,
+        });
     });
 });
 
-app.get("/api/users/:id/exercises", async (req, res) => {
+app.get("/api/users/:id/logs", async (req, res) => {
     const user = await User.findById(req.params.id);
 
     const { from, to, limit } = req.query;
@@ -80,7 +91,7 @@ app.get("/api/users/:id/exercises", async (req, res) => {
         "-_id description duration date"
     );
 
-    if (limit) exercises = exercises.limit(limit);
+    if (limit) exercises = exercises.limit(parseInt(limit));
 
     exercises = await exercises.exec();
 
@@ -100,7 +111,8 @@ app.get("/api/users/:id/exercises", async (req, res) => {
     }
 
     const returnedObject = {
-        ...user.toObject(),
+        _id: user._id,
+        username: user.username,
         count: exercises.length,
         log: exercises,
     };
